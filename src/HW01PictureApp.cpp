@@ -43,6 +43,7 @@ class HW01PictureApp : public AppBasic {
 
 	  Surface* mySurface_;
 	  int lineX, lineY, line2X, line2Y, lineSign;
+	  uint8_t* blur_pattern_;
 
 	  struct diamonds_info{
 		  int x;
@@ -55,16 +56,53 @@ class HW01PictureApp : public AppBasic {
 	  static const int kAppHeight=600;
 	  static const int kTextureSize=1024;
 	  
-
+  /**
+   * Fill a solid color rectangle between the given x1,x2,y1,and y2 
+   * parameters. 
+   *
+   *Satisfies the rectangle requirement, A.1
+   */
   void buildRectangle(uint8_t* pixels, int x1, int x2, int y1, int y2, Color8u fill);
 
+  /**
+   * Draw a line, of a 1 pixel width between the given
+   * endpoints (x1, y1) , (x2, y2). Uses the Bresenham's Line
+   * algorithm
+   * 
+   * Fulfills the line requirement, A.3
+   */
   void drawLine(uint8_t* pixels, int x1, int y1, int x2, int y2, Color8u fill);
 
+  /**
+   * Draw a single point, given an x and y coordinate
+   * Only meant to simplify thought process
+   */
   void drawPoint(uint8_t* pixels, int x, int y, Color8u fill);
   
+  /**
+   * Draws an empty triangle with the endpoints
+   * (x1,y1), (x2,y2), and (x3,y3)
+   * By making three calls to the drawLine method
+   *
+   * Fulfills the triangle requirement, A.7
+   */
   void drawTriangle(uint8_t* pixels, int x1, int y1,int  x2,int y2, int x3, int y3, Color8u fill);
 
+  /**
+   * Draws a circle at the (x,y) coordinate, with a radius of
+   * r. Uses the axis-aligned bounding box method
+   *
+   * Fulfills the circle requirement, A.2
+   */
   void makeCircle(uint8_t* pixels, int x, int y, int r, Color8u fill);
+
+  /**
+   * Blurs an image (pixels) using blur_pattern
+   * Not fully implemented
+   *
+   * Fulfills the blur requirement, B.1
+   */
+  void blur(uint8_t* pixels, uint8_t* blur_pattern);
 };
 
 void HW01PictureApp::prepareSettings(Settings* settings){
@@ -75,7 +113,6 @@ void HW01PictureApp::prepareSettings(Settings* settings){
 void HW01PictureApp::buildRectangle(uint8_t* pixels, int x1, int x2, int y1, int y2, Color8u fill){
 
 	Color8u c = fill;
-	
 
 	for(int i = x1; i<x2; i++){
 		for(int j = y1; j<y2; j++){
@@ -107,7 +144,6 @@ void HW01PictureApp::drawLine(uint8_t* pixels,int x1, int y1, int x2, int y2, Co
 	Color8u c = fill;
 	// Following code implements Bresenham's Line Algorithm, inspired by:
 	// http://roguebasin.roguelikedevelopment.org/index.php/Bresenham's_Line_Algorithm
-
 	int delta_x(x2 - x1);
     // if x1 == x2, then it does not matter what we set here
     signed char const ix((delta_x > 0) - (delta_x < 0));
@@ -177,9 +213,10 @@ void HW01PictureApp::makeCircle(uint8_t* pixels, int x, int y, int r, Color8u fi
 	if(r<=0) return;
 	Color8u c =fill;
 	
-	
+	// Axis aligned bounding box method
 	for(int i = x-r;i<(x+r);i++){
 		for( int j = y-r; j<(y+r);j++){
+			// Check bounds
 			if(j < 0 || i < 0 || i >= 800 || j >= 600) continue;
 			int  dist = (int)sqrt((double)((i-x)*(i-x))+((j-y)*(j-y)));
 			if(dist<=r) drawPoint(pixels, i,j, c);
@@ -190,6 +227,44 @@ void HW01PictureApp::makeCircle(uint8_t* pixels, int x, int y, int r, Color8u fi
 
 }
 
+void HW01PictureApp::blur(uint8_t* pixels, uint8_t* blur_pattern){
+
+	// This method borrows ideas from both Bo's solution
+	// and http://cboard.cprogramming.com/cplusplus-programming/62752-blur-sharpen-bitmap.html
+	static uint8_t image_copy[3*1024*1024];
+
+	uint8_t kernel[9] = {1,2,1,2,4,2,1,2,1};
+	int k, total_red, total_green, total_blue;
+
+	for(int i = 1; i<(600-1); i++){
+		for(int j = 1; j<(800-1);j++){
+
+			int offset = 3*(i+j*800);
+			total_red = 0;
+			total_green = 0;
+			total_blue = 0;
+
+			for( int k = 0; k < 3; k++){
+				for( int l =0; l< 3; k++){
+
+					offset = 3*(j+l + (i+k)*1024);
+					k= kernel[l+1+(k+1)*3];
+
+					total_red += (image_copy[offset] >> k);
+					total_green += (image_copy[offset+1] >>k);
+					total_blue += (image_copy[offset+2] >>k);
+				}
+			}
+			offset = 3*(j+i*1024);
+			pixels[offset] = total_red;
+			pixels[offset] =total_green;
+			pixels[offset] = total_blue;
+		}
+	}
+
+
+
+}
 
 
 
@@ -212,11 +287,24 @@ void HW01PictureApp::setup()
 	line2X = 0;
 	line2Y = 600;
 
+	/*
+	blur_pattern_ = new uint8_t[800*600*3];
+	for(int i=0;i<600;i++){
+		for(int j=0;j<800;j++){
+			int offset = 3*(j + i*800);
+			blur_pattern_[offset] = dataArray[offset];
+		}
+	}
+	*/
+
+
 
 }
 
-void HW01PictureApp::mouseDown( MouseEvent event )
-{
+// Mouse interaction fulfills goal E.7
+void HW01PictureApp::mouseDown( MouseEvent event ){
+	
+	
 	diamonds_info t;
 	t.x = event.getX();
 	t.y = event.getY();
@@ -230,6 +318,7 @@ void HW01PictureApp::update()
 {
 	uint8_t* dataArray = (*mySurface_).getData();
 
+	// Regulates the color of the background
 	brightness += 0.005f;
 	if( brightness > 1.0f){
 	   brightness = 0.5f;
@@ -246,14 +335,21 @@ void HW01PictureApp::update()
 	// Clears the frame every update iteration
 	buildRectangle(dataArray, 0, 800, 0, 600, c);
 
+	// Draw the four circles
 	makeCircle(dataArray, 200,150, 100, c6);
 	makeCircle(dataArray, 200,450,100, Color8u(255,255,0));
 	makeCircle(dataArray, 600,450, 100, Color8u(255,0,255));
 	makeCircle(dataArray, 600,150,100, Color8u(0,255,255));
+
+	// Draw the lines that make the "frame"
 	drawLine(dataArray, 400, 0, 400, 600, Color8u(0,0,0));
 	drawLine(dataArray, 0, 300, 800, 300, Color8u(0,0,0));
 	
+	//blur(dataArray, blur_pattern_);
 
+	// The following conditionals are responsible for the 
+	// animations of the rectangle and triangle
+	// Fulfills goal E.6, for animation
 	if((400+xDiff)>= 800.0 || (200+xDiff) <= 0.0) xSign = xSign*(-1.0);
 	xDiff = 2.0*xSign+xDiff;
 	if((300+yDiff)>= 600.0 || (100+yDiff)<= 0.0) ySign = ySign*(-1.0);
@@ -270,7 +366,9 @@ void HW01PictureApp::update()
 	buildRectangle(dataArray, 200+xDiff, 400+xDiff, 100+yDiff, 300+yDiff, c2);
 
 	drawTriangle(dataArray, 266+trigXDiff, 400+trigYDiff, 400+trigXDiff, 200+trigYDiff, 533+trigXDiff, 400+trigYDiff, c3);
-
+	 
+	// Following few lines of code are responsible for
+	// the sliding line segments
 	drawLine(dataArray, lineX, lineY, lineX+100, lineY+75, c4);
 	drawLine(dataArray, line2X, line2Y, line2X+100, line2Y-75, c4);
 	lineX +=4*lineSign;
@@ -290,7 +388,8 @@ void HW01PictureApp::update()
 	
 	
 	
-	
+	// The rest of the update method is used for mouse
+	// interaction and event handling
 	while(diamonds_list_.size() > 0 && diamonds_list_[0].r<=0)
 		diamonds_list_.pop_front();
 
@@ -318,10 +417,7 @@ void HW01PictureApp::update()
 
 void HW01PictureApp::draw()
 {
-	// clear out the window with black
 	
-	
-	//gl::clear( Color( brightness, 0.0, 0.0 ) );
 	gl::draw(*mySurface_);
 		 
 
