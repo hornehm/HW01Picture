@@ -1,3 +1,19 @@
+/**
+*@file HW01Picture.cpp
+*CSE 274 - Fall 2012
+*A solution for HW01
+*
+*@author Nicholas Collins
+*@date 2012-09-05
+*
+*@note This project satisfies goals A.1 (rectangle), A.2 (circle), 
+* A.3 (line), A.7 (triangle), E.5 (animation), and E.6 (mouse interaction)
+*/ 
+
+
+
+
+
 #pragma once
 #include "cinder/app/AppBasic.h"
 #include "cinder/gl/gl.h"
@@ -26,12 +42,6 @@ class HW01PictureApp : public AppBasic {
 	  int sign, trigXSign, trigYSign, trigXDiff, trigYDiff;
 
 	  Surface* mySurface_;
-	 /*
-	  int wavyX;
-	  int wavyY;
-	  int wavySign;
-	  int waveAngle;
-	  */
 	  int lineX, lineY, line2X, line2Y, lineSign;
 
 	  struct diamonds_info{
@@ -53,6 +63,8 @@ class HW01PictureApp : public AppBasic {
   void drawPoint(uint8_t* pixels, int x, int y, Color8u fill);
   
   void drawTriangle(uint8_t* pixels, int x1, int y1,int  x2,int y2, int x3, int y3, Color8u fill);
+
+  void makeCircle(uint8_t* pixels, int x, int y, int r, Color8u fill);
 };
 
 void HW01PictureApp::prepareSettings(Settings* settings){
@@ -160,6 +172,26 @@ void HW01PictureApp::drawTriangle(uint8_t* pixels, int x1, int y1, int x2, int y
 
 }
 
+void HW01PictureApp::makeCircle(uint8_t* pixels, int x, int y, int r, Color8u fill){
+
+	if(r<=0) return;
+	Color8u c =fill;
+	
+	
+	for(int i = x-r;i<(x+r);i++){
+		for( int j = y-r; j<(y+r);j++){
+			if(j < 0 || i < 0 || i >= 800 || j >= 600) continue;
+			int  dist = (int)sqrt((double)((i-x)*(i-x))+((j-y)*(j-y)));
+			if(dist<=r) drawPoint(pixels, i,j, c);
+			
+				
+		}
+	}
+
+}
+
+
+
 
 void HW01PictureApp::setup()
 {
@@ -208,11 +240,16 @@ void HW01PictureApp::update()
 	Color8u c3 = Color8u(0, 150, 0);
 	Color8u c4 = Color8u(0, 254*brightness, 0);
 	Color8u c5 = Color8u(200,200,0);
+	Color8u c6 = Color8u(0,0,255);
 
 	
 	// Clears the frame every update iteration
 	buildRectangle(dataArray, 0, 800, 0, 600, c);
 
+	makeCircle(dataArray, 200,150, 100, c6);
+	makeCircle(dataArray, 200,450,100, Color8u(255,255,0));
+	makeCircle(dataArray, 600,450, 100, Color8u(255,0,255));
+	makeCircle(dataArray, 600,150,100, Color8u(0,255,255));
 	drawLine(dataArray, 400, 0, 400, 600, Color8u(0,0,0));
 	drawLine(dataArray, 0, 300, 800, 300, Color8u(0,0,0));
 	
@@ -231,7 +268,7 @@ void HW01PictureApp::update()
 	trigYDiff = 3*trigYSign+trigYDiff;
 	
 	buildRectangle(dataArray, 200+xDiff, 400+xDiff, 100+yDiff, 300+yDiff, c2);
-	
+
 	drawTriangle(dataArray, 266+trigXDiff, 400+trigYDiff, 400+trigXDiff, 200+trigYDiff, 533+trigXDiff, 400+trigYDiff, c3);
 
 	drawLine(dataArray, lineX, lineY, lineX+100, lineY+75, c4);
@@ -249,6 +286,8 @@ void HW01PictureApp::update()
 		line2X+=4;
 		line2Y-=4;
 	}
+
+	
 	
 	
 	
@@ -273,7 +312,7 @@ void HW01PictureApp::update()
 	}
 	
 	
-
+	
 	
 }
 
