@@ -52,6 +52,8 @@ class HW01PictureApp : public AppBasic {
 	  };
 	  deque<diamonds_info> diamonds_list_;
 
+	  //I love how you declare these but do not use 
+	  // use them where they should be ^.^ Don't worry I got you.
 	  static const int kAppWidth=800;
 	  static const int kAppHeight=600;
 	  static const int kTextureSize=1024;
@@ -106,21 +108,22 @@ class HW01PictureApp : public AppBasic {
 };
 
 void HW01PictureApp::prepareSettings(Settings* settings){
-	(*settings).setWindowSize(800,600);
+	(*settings).setWindowSize(kAppWidth,kAppHeight);
 	(*settings).setResizable(false);
 }
 
 void HW01PictureApp::buildRectangle(uint8_t* pixels, int x1, int x2, int y1, int y2, Color8u fill){
-
-	Color8u c = fill;
+	//There really isn't a need to do this. I changed the code below
+	// so that it would work. Use fill in place of c.
+	//Color8u c = fill;
 
 	for(int i = x1; i<x2; i++){
 		for(int j = y1; j<y2; j++){
 	
 	
-	     pixels[3*(i+j*1024)] = c.r;
-		 pixels[3*(i+j*1024)+1] = c.g;
-		 pixels[3*(i+j*1024)+2] = c.b;
+	     pixels[3*(i+j*kTextureSize)] = fill.r;//changed to fill
+		 pixels[3*(i+j*kTextureSize)+1] = fill.g;
+		 pixels[3*(i+j*kTextureSize)+2] = fill.b;
 
 
 		}
@@ -132,16 +135,16 @@ void HW01PictureApp::buildRectangle(uint8_t* pixels, int x1, int x2, int y1, int
 void HW01PictureApp::drawPoint(uint8_t* pixels, int x, int y, Color8u fill){
 	
 	Color8u c = fill;
-	pixels[3*(x+y*1024)] = c.r;
-	pixels[3*(x+y*1024)+1] = c.g;
-	pixels[3*(x+y*1024)+2] = c.b;
+	pixels[3*(x+y*kTextureSize)] = c.r;
+	pixels[3*(x+y*kTextureSize)+1] = c.g;
+	pixels[3*(x+y*kTextureSize)+2] = c.b;
 
 
 }
 
 void HW01PictureApp::drawLine(uint8_t* pixels,int x1, int y1, int x2, int y2, Color8u fill){
 
-	Color8u c = fill;
+
 	// Following code implements Bresenham's Line Algorithm, inspired by:
 	// http://roguebasin.roguelikedevelopment.org/index.php/Bresenham's_Line_Algorithm
 	int delta_x(x2 - x1);
@@ -154,7 +157,7 @@ void HW01PictureApp::drawLine(uint8_t* pixels,int x1, int y1, int x2, int y2, Co
     signed char const iy((delta_y > 0) - (delta_y < 0));
     delta_y = std::abs(delta_y) << 1;
  
-    drawPoint(pixels, x1, y1, c);
+    drawPoint(pixels, x1, y1, fill);
  
     if (delta_x >= delta_y)
     {
@@ -173,7 +176,7 @@ void HW01PictureApp::drawLine(uint8_t* pixels,int x1, int y1, int x2, int y2, Co
             error += delta_y;
             x1 += ix;
  
-            drawPoint(pixels, x1, y1, c);
+            drawPoint(pixels, x1, y1, fill);
         }
     }
     else
@@ -193,33 +196,32 @@ void HW01PictureApp::drawLine(uint8_t* pixels,int x1, int y1, int x2, int y2, Co
             error += delta_x;
             y1 += iy;
  
-            drawPoint(pixels,x1, y1,c);
+            drawPoint(pixels,x1, y1,fill);
         }
     }
 }
 
 void HW01PictureApp::drawTriangle(uint8_t* pixels, int x1, int y1, int x2, int y2, int x3, int y3, Color8u fill){
 
-	Color8u c = fill;
 
-	drawLine(pixels, x1, y1, x2, y2, c);
-	drawLine(pixels, x2, y2, x3, y3, c);
-	drawLine(pixels, x3, y3, x1, y1, c);
+	drawLine(pixels, x1, y1, x2, y2, fill);
+	drawLine(pixels, x2, y2, x3, y3, fill);
+	drawLine(pixels, x3, y3, x1, y1, fill);
 
 }
 
 void HW01PictureApp::makeCircle(uint8_t* pixels, int x, int y, int r, Color8u fill){
 
 	if(r<=0) return;
-	Color8u c =fill;
+	
 	
 	// Axis aligned bounding box method
 	for(int i = x-r;i<(x+r);i++){
 		for( int j = y-r; j<(y+r);j++){
 			// Check bounds
-			if(j < 0 || i < 0 || i >= 800 || j >= 600) continue;
+			if(j < 0 || i < 0 || i >= kAppWidth || j >= kAppHeight) continue;
 			int  dist = (int)sqrt((double)((i-x)*(i-x))+((j-y)*(j-y)));
-			if(dist<=r) drawPoint(pixels, i,j, c);
+			if(dist<=r) drawPoint(pixels, i,j, fill);//Again, you can just use directly
 			
 				
 		}
@@ -231,15 +233,15 @@ void HW01PictureApp::blur(uint8_t* pixels, uint8_t* blur_pattern){
 
 	// This method borrows ideas from both Bo's solution
 	// and http://cboard.cprogramming.com/cplusplus-programming/62752-blur-sharpen-bitmap.html
-	static uint8_t image_copy[3*1024*1024];
+	static uint8_t image_copy[3*kTextureSize*kTextureSize];
 
 	uint8_t kernel[9] = {1,2,1,2,4,2,1,2,1};
 	int k, total_red, total_green, total_blue;
 
-	for(int i = 1; i<(600-1); i++){
-		for(int j = 1; j<(800-1);j++){
+	for(int i = 1; i<(kAppHeight-1); i++){
+		for(int j = 1; j<(kAppWidth-1);j++){
 
-			int offset = 3*(i+j*800);
+			int offset = 3*(i+j*kAppWidth);
 			total_red = 0;
 			total_green = 0;
 			total_blue = 0;
@@ -247,7 +249,7 @@ void HW01PictureApp::blur(uint8_t* pixels, uint8_t* blur_pattern){
 			for( int k = 0; k < 3; k++){
 				for( int l =0; l< 3; k++){
 
-					offset = 3*(j+l + (i+k)*1024);
+					offset = 3*(j+l + (i+k)*kTextureSize);
 					k= kernel[l+1+(k+1)*3];
 
 					total_red += (image_copy[offset] >> k);
@@ -255,7 +257,7 @@ void HW01PictureApp::blur(uint8_t* pixels, uint8_t* blur_pattern){
 					total_blue += (image_copy[offset+2] >>k);
 				}
 			}
-			offset = 3*(j+i*1024);
+			offset = 3*(j+i*kTextureSize);
 			pixels[offset] = total_red;
 			pixels[offset] =total_green;
 			pixels[offset] = total_blue;
@@ -285,13 +287,13 @@ void HW01PictureApp::setup()
 	lineY=0;
 	lineSign =1;
 	line2X = 0;
-	line2Y = 600;
+	line2Y = kAppHeight;
 
 	/*
-	blur_pattern_ = new uint8_t[800*600*3];
-	for(int i=0;i<600;i++){
-		for(int j=0;j<800;j++){
-			int offset = 3*(j + i*800);
+	blur_pattern_ = new uint8_t[kAppWidth*kAppHeight*3];
+	for(int i=0;i<kAppHeight;i++){
+		for(int j=0;j<kAppWidth;j++){
+			int offset = 3*(j + i*kAppWidth);
 			blur_pattern_[offset] = dataArray[offset];
 		}
 	}
@@ -333,7 +335,7 @@ void HW01PictureApp::update()
 
 	
 	// Clears the frame every update iteration
-	buildRectangle(dataArray, 0, 800, 0, 600, c);
+	buildRectangle(dataArray, 0, kAppWidth, 0, kAppHeight, c);
 
 	// Draw the four circles
 	makeCircle(dataArray, 200,150, 100, c6);
@@ -350,16 +352,16 @@ void HW01PictureApp::update()
 	// The following conditionals are responsible for the 
 	// animations of the rectangle and triangle
 	// Fulfills goal E.6, for animation
-	if((400+xDiff)>= 800.0 || (200+xDiff) <= 0.0) xSign = xSign*(-1.0);
+	if((400+xDiff)>= kAppWidth || (200+xDiff) <= 0.0) xSign = xSign*(-1.0);
 	xDiff = 2.0*xSign+xDiff;
-	if((300+yDiff)>= 600.0 || (100+yDiff)<= 0.0) ySign = ySign*(-1.0);
+	if((300+yDiff)>= kAppHeight || (100+yDiff)<= 0.0) ySign = ySign*(-1.0);
 	yDiff = 2.0*ySign+yDiff;
 	
-	if((trigXDiff + 266) <= 0 || (533+trigXDiff)>= 800 )
+	if((trigXDiff + 266) <= 0 || (533+trigXDiff)>= kAppWidth )
 		trigXSign = trigXSign*(-1);
 	trigXDiff = 3*trigXSign+trigXDiff;
 
-	if((trigYDiff +200) <= 3|| (400+trigYDiff)>=600)
+	if((trigYDiff +200) <= 3|| (400+trigYDiff)>=kAppHeight)
 		trigYSign = trigYSign*(-1);
 	trigYDiff = 3*trigYSign+trigYDiff;
 	
