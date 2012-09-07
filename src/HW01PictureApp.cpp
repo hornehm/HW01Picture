@@ -117,8 +117,10 @@ void HW01PictureApp::buildRectangle(uint8_t* pixels, int x1, int x2, int y1, int
 	// so that it would work. Use fill in place of c.
 	//Color8u c = fill;
 
-	for(int i = x1; i<x2; i++){
-		for(int j = y1; j<y2; j++){
+	//It should be i<=x2, and k <= y2. Otherwise, it won't actually
+	// go to (x2, y2), but instead (x2-1, y2-1)
+	for(int i = x1; i<=x2; i++){
+		for(int j = y1; j<=y2; j++){
 	
 	
 	     pixels[3*(i+j*kTextureSize)] = fill.r;//changed to fill
@@ -134,10 +136,9 @@ void HW01PictureApp::buildRectangle(uint8_t* pixels, int x1, int x2, int y1, int
 
 void HW01PictureApp::drawPoint(uint8_t* pixels, int x, int y, Color8u fill){
 	
-	Color8u c = fill;
-	pixels[3*(x+y*kTextureSize)] = c.r;
-	pixels[3*(x+y*kTextureSize)+1] = c.g;
-	pixels[3*(x+y*kTextureSize)+2] = c.b;
+	pixels[3*(x+y*kTextureSize)] = fill.r;
+	pixels[3*(x+y*kTextureSize)+1] = fill.g;
+	pixels[3*(x+y*kTextureSize)+2] = fill.b;
 
 
 }
@@ -203,7 +204,6 @@ void HW01PictureApp::drawLine(uint8_t* pixels,int x1, int y1, int x2, int y2, Co
 
 void HW01PictureApp::drawTriangle(uint8_t* pixels, int x1, int y1, int x2, int y2, int x3, int y3, Color8u fill){
 
-
 	drawLine(pixels, x1, y1, x2, y2, fill);
 	drawLine(pixels, x2, y2, x3, y3, fill);
 	drawLine(pixels, x3, y3, x1, y1, fill);
@@ -213,7 +213,6 @@ void HW01PictureApp::drawTriangle(uint8_t* pixels, int x1, int y1, int x2, int y
 void HW01PictureApp::makeCircle(uint8_t* pixels, int x, int y, int r, Color8u fill){
 
 	if(r<=0) return;
-	
 	
 	// Axis aligned bounding box method
 	for(int i = x-r;i<(x+r);i++){
@@ -236,28 +235,33 @@ void HW01PictureApp::blur(uint8_t* pixels, uint8_t* blur_pattern){
 	static uint8_t image_copy[3*kTextureSize*kTextureSize];
 
 	uint8_t kernel[9] = {1,2,1,2,4,2,1,2,1};
-	int k, total_red, total_green, total_blue;
+	int k=0, total_red, total_green, total_blue;
 
-	for(int i = 1; i<(kAppHeight-1); i++){
-		for(int j = 1; j<(kAppWidth-1);j++){
+	//I ran out of time to change this in my project, however,
+	// it is easier to read if you change i, j, k, l, to 
+	// x, y, kx, ky. (or however else you want to label kx, ky) 
+	for(int y = 1; y<(kAppHeight-1); y++){
+		for(int x = 1; x<(kAppWidth-1);x++){
 
-			int offset = 3*(i+j*kAppWidth);
+			int offset = 3*(y+x*kAppWidth);
 			total_red = 0;
 			total_green = 0;
 			total_blue = 0;
 
-			for( int k = 0; k < 3; k++){
-				for( int l =0; l< 3; k++){
+			for( int ky = 0; ky < 3; ky++){
+				//I did not notice this untill now, but you have k++ instead
+				// of l++ here, but im changing to kx
+				for( int kx =0; kx < 3; kx++){
 
-					offset = 3*(j+l + (i+k)*kTextureSize);
-					k= kernel[l+1+(k+1)*3];
+					offset = 3*(x+kx + (y+ky)*kTextureSize);
+					k= kernel[kx+1+(k+1)*3];
 
 					total_red += (image_copy[offset] >> k);
 					total_green += (image_copy[offset+1] >>k);
 					total_blue += (image_copy[offset+2] >>k);
 				}
 			}
-			offset = 3*(j+i*kTextureSize);
+			offset = 3*(x+y*kTextureSize);
 			pixels[offset] = total_red;
 			pixels[offset] =total_green;
 			pixels[offset] = total_blue;
@@ -352,11 +356,14 @@ void HW01PictureApp::update()
 	// The following conditionals are responsible for the 
 	// animations of the rectangle and triangle
 	// Fulfills goal E.6, for animation
-	if((400+xDiff)>= kAppWidth || (200+xDiff) <= 0.0) xSign = xSign*(-1.0);
+	if((int)(400+xDiff)>= kAppWidth || (int)(200+xDiff) <= 0) xSign = xSign*(-1.0);
+	//I was a bit unsure how to cast this one correctly. I didn't know where the parenthesis would be best.
 	xDiff = 2.0*xSign+xDiff;
-	if((300+yDiff)>= kAppHeight || (100+yDiff)<= 0.0) ySign = ySign*(-1.0);
+	if((int)(300+yDiff)>= kAppHeight || (int)(100+yDiff)<= 0) ySign = ySign*(-1.0);
 	yDiff = 2.0*ySign+yDiff;
 	
+	//I was confused at what all the specific numbers meant, but I left 
+	// them alone
 	if((trigXDiff + 266) <= 0 || (533+trigXDiff)>= kAppWidth )
 		trigXSign = trigXSign*(-1);
 	trigXDiff = 3*trigXSign+trigXDiff;
